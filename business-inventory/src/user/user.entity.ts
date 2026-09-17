@@ -38,13 +38,12 @@ export class User {
   })
   password?: string;
 
-  //   @Column({
-  //     type: 'enum',
-  //     enum: RoleType,
-  //     default: RoleType.BUSINESS_OWNER,
-  //     nullable: true,
-  //   })
-  //   role: RoleType;
+  @Column({
+    type: 'boolean',
+    default: false,
+    nullable: false,
+  })
+  isEmailVerified: boolean;
 
   @CreateDateColumn()
   createdAt: Date;
