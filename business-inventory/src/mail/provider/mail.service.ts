@@ -33,4 +33,18 @@ export class MailService {
       throw new InternalServerErrorException('Internal server error');
     }
   }
+
+  async sendSetNewPassword(user: User) {
+    try {
+      await this.mailerService.sendMail({
+        to: user.email,
+        subject: `Kindly set your password`,
+        template: `password-reset`,
+        context: {
+          name: user.firstName,
+          setPasswordLink: await this.tokenService.setPasswordUrl(user.email),
+        },
+      });
+    } catch (err) {}
+  }
 }

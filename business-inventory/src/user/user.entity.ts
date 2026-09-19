@@ -15,6 +15,13 @@ export class User {
 
   @Column({
     type: 'varchar',
+    nullable: true,
+    unique: true,
+  })
+  googleId?: string | null;
+
+  @Column({
+    type: 'varchar',
     nullable: false,
   })
   firstName: string;
@@ -36,7 +43,7 @@ export class User {
     type: 'varchar',
     nullable: true,
   })
-  password?: string;
+  password?: string | null;
 
   @Column({
     type: 'boolean',
