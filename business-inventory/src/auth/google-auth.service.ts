@@ -62,9 +62,11 @@ export class GoogleAuthService {
       }
       const findExistingUser = await this.userService.findByEmail(email);
       if (findExistingUser) {
-        findExistingUser.googleId = googleId;
-        findExistingUser.isEmailVerified = true;
-        await this.userService.updateUser(findExistingUser);
+        await this.userService.updateUser({
+          id: findExistingUser.id,
+          googleId,
+          isEmailVerified: true,
+        });
 
         const tokens = await this.tokenService.generateToken(findExistingUser);
         return {

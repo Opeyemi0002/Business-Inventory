@@ -10,7 +10,7 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JsonWebTokenError } from '@nestjs/jwt';
 import { UserService } from '../../user/provider/user.service';
 import { CreateUserDto } from '../DTOs/create-user.dto';
 import type { ConfigType } from '@nestjs/config';
@@ -107,6 +107,9 @@ export class AuthService {
         issuer: this.jwtConfiguration.issuer,
         audience: this.jwtConfiguration.audience,
       });
+      if (!payload || payload.purpose !== 'email-verification') {
+        throw new UnauthorizedException('Email verification fails');
+      }
       //search the id through the database
       const findUser = await this.userService.findById(payload.sub);
 
@@ -114,11 +117,25 @@ export class AuthService {
       if (!findUser) {
         throw new NotFoundException('User not found');
       }
+      if (findUser.isEmailVerified) {
+        throw new ConflictException('Email verified already');
+      }
       findUser.isEmailVerified = true;
-      await this.userService.updateUser(findUser);
+      await this.userService.updateUser({
+        id: findUser.id,
+        isEmailVerified: true,
+      });
       return { status: 'success', message: 'email verified successfully' };
     } catch (err) {
-      throw new UnauthorizedException('problem verifying your email');
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      if (err instanceof JsonWebTokenError) {
+        throw new UnauthorizedException(
+          'Invalid or expired email verification link',
+        );
+      }
+      throw new InternalServerErrorException('problem verifying your email');
     }
   }
   async setPassword(setPasswordDto: SetPasswordDto, token: string) {
@@ -129,19 +146,28 @@ export class AuthService {
         issuer: this.jwtConfiguration.issuer,
         audience: this.jwtConfiguration.audience,
       });
-      if (!payload) {
-        throw new UnauthorizedException('User authentiction fails');
+      if (!payload || payload.purpose !== 'password-setup') {
+        throw new UnauthorizedException('User password authentiction fails');
       }
       const findUser = await this.userService.findByEmail(payload.email);
       if (!findUser) {
         throw new NotFoundException('User not found');
       }
       //if email found, hash the password and save to the database
+      if (payload.passwordResetVersion !== findUser.passwordResetVersion) {
+        throw new ConflictException(
+          'This password link is no longer valid. Please request a new one.',
+        );
+      }
       const passwordHash = await this.hashService.hashPassword(
         setPasswordDto.password,
       );
-      findUser.password = passwordHash;
-      await this.userService.updateUser(findUser);
+      await this.userService.savePasswordWithLock(
+        findUser.id,
+        passwordHash,
+        payload.passwordResetVersion,
+      );
+
       return {
         status: 'success',
         message: 'password updated successfully',
@@ -149,6 +175,9 @@ export class AuthService {
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
+      }
+      if (err instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Invalid or expired password link');
       }
       throw new InternalServerErrorException('Internal server error');
     }

@@ -28,6 +28,7 @@ export class TokenService {
       {
         sub: user.id,
         email: user.email,
+        purpose: 'email-verification',
       },
       {
         secret: this.jwtConfiguration.secret,
@@ -52,6 +53,8 @@ export class TokenService {
         {
           sub: findUser.id,
           email: findUser.email,
+          purpose: 'password-setup',
+          passwordResetVersion: findUser.passwordResetVersion,
         },
         {
           secret: this.jwtConfiguration.secret,

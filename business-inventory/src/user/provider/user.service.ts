@@ -110,7 +110,37 @@ export class UserService {
       throw new InternalServerErrorException('Internal server error');
     }
   }
-  async updateUser(user: User): Promise<void> {
+  async updateUser(user: Partial<User> & { id: number }): Promise<void> {
     await this.userRepository.save(user);
+  }
+
+  async savePasswordWithLock(
+    userId: number,
+    passwordHash: string,
+    expectedVersion: number,
+  ): Promise<void> {
+    await this.userRepository.manager.transaction(async (manager) => {
+      const users = manager.getRepository(User);
+
+      const user = await users.findOne({
+        where: { id: userId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      if (user.passwordResetVersion !== expectedVersion) {
+        throw new ConflictException(
+          'This password link is no longer valid. Please request a new one.',
+        );
+      }
+
+      user.password = passwordHash;
+      user.passwordResetVersion += 1;
+
+      await users.save(user);
+    });
   }
 }

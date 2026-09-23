@@ -45,6 +45,8 @@ export class MailService {
           setPasswordLink: await this.tokenService.setPasswordUrl(user.email),
         },
       });
-    } catch (err) {}
+    } catch (err) {
+      throw err;
+    }
   }
 }

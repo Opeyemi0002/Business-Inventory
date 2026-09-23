@@ -45,6 +45,13 @@ export class User {
   password?: string | null;
 
   @Column({
+    type: 'int',
+    nullable: false,
+    default: 0,
+  })
+  passwordResetVersion: number;
+
+  @Column({
     type: 'boolean',
     default: false,
     nullable: false,
