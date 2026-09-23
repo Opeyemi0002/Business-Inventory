@@ -9,11 +9,14 @@ import { ConfigModule } from '@nestjs/config';
 import { HashService } from './provider/hash.service';
 import { BcryptService } from './provider/bcrypt.service';
 import { MailModule } from '../mail/mail.module';
+import { GoogleAuthService } from './google-auth.service';
+import googleClientConfig from '../config/google-client.config';
 
 @Module({
   imports: [
     forwardRef(() => UserModule),
     forwardRef(() => MailModule),
+    ConfigModule.forFeature(googleClientConfig),
     ConfigModule.forFeature(jwtConfig),
     JwtModule.registerAsync(jwtConfig.asProvider()),
   ],
@@ -24,6 +27,7 @@ import { MailModule } from '../mail/mail.module';
       provide: HashService,
       useClass: BcryptService,
     },
+    GoogleAuthService,
   ],
   controllers: [AuthController],
   exports: [TokenService],

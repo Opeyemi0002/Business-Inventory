@@ -68,4 +68,29 @@ export class TokenService {
       throw new InternalServerErrorException('Internal server error');
     }
   }
+
+  async generateToken(user: User) {
+    const accessToken = await this.jwtService.signAsync(
+      { sub: user.id, email: user.email },
+      {
+        secret: this.jwtConfiguration.secret,
+        issuer: this.jwtConfiguration.issuer,
+        audience: this.jwtConfiguration.audience,
+        expiresIn: this.jwtConfiguration.expiresIn,
+      },
+    );
+    const refreshToken = await this.jwtService.signAsync(
+      { sub: user.id, email: user.email },
+      {
+        secret: this.jwtConfiguration.secret,
+        issuer: this.jwtConfiguration.issuer,
+        audience: this.jwtConfiguration.audience,
+        expiresIn: this.jwtConfiguration.refreshTTL,
+      },
+    );
+    return {
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    };
+  }
 }

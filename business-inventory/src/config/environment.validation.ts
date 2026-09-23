@@ -17,4 +17,6 @@ export default joi.object({
   JWT_AUDIENCE: joi.string().required(),
   JWT_EXPIRY: joi.number().required(),
   JWT_REFRESH_TOKEN_TTL: joi.number().required(),
+  GOOGLE_CLIENT_SECRET: joi.string().required(),
+  GOOGLE_CLIENT_ID: joi.string().required(),
 });

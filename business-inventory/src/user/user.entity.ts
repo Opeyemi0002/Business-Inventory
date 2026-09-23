@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
 } from 'typeorm';
-import { RoleType } from './enum/roleType.enum';
 
 @Entity()
 export class User {
@@ -22,15 +21,15 @@ export class User {
 
   @Column({
     type: 'varchar',
-    nullable: false,
+    nullable: true,
   })
-  firstName: string;
+  firstName?: string;
 
   @Column({
     type: 'varchar',
-    nullable: false,
+    nullable: true,
   })
-  lastName: string;
+  lastName?: string;
 
   @Column({
     type: 'varchar',

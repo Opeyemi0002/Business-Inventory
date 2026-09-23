@@ -19,12 +19,14 @@ import { LoginUserDto } from '../DTOs/login-user.dto';
 import { HashService } from './hash.service';
 import { SetPasswordDto } from '../DTOs/set-password.dto';
 import { MailService } from '../../mail/provider/mail.service';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly hashService: HashService,
     private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
     @Inject(forwardRef(() => MailService))
     private readonly mailService: MailService,
     @Inject(forwardRef(() => UserService))
@@ -57,7 +59,6 @@ export class AuthService {
       const findUser = await this.userService.findByEmail(logInUserDto.email);
       //if it doesn't exist, throw a conflictexception
       if (!findUser) {
-        console.log('A');
         throw new ConflictException('Invalid details');
       }
       //if it exist, compare the encrypted password to see if it pass
@@ -83,7 +84,12 @@ export class AuthService {
       }
       return {
         status: 'success',
-        message: '',
+        message: 'User login succesfully',
+        data: {
+          firstName: findUser.firstName,
+          lastname: findUser.lastName,
+          ...(await this.tokenService.generateToken(findUser)),
+        },
       };
     } catch (err) {
       if (err instanceof HttpException) {
@@ -123,6 +129,9 @@ export class AuthService {
         issuer: this.jwtConfiguration.issuer,
         audience: this.jwtConfiguration.audience,
       });
+      if (!payload) {
+        throw new UnauthorizedException('User authentiction fails');
+      }
       const findUser = await this.userService.findByEmail(payload.email);
       if (!findUser) {
         throw new NotFoundException('User not found');
