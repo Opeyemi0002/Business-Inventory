@@ -6,7 +6,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -137,10 +136,11 @@ export class UserService {
         );
       }
 
-      user.password = passwordHash;
-      user.passwordResetVersion += 1;
-
-      await users.save(user);
+      await users.save({
+        id: user.id,
+        password: passwordHash,
+        passwordResetVersion: user.passwordResetVersion + 1,
+      });
     });
   }
 }

@@ -3,10 +3,12 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import { OAuth2Client } from 'google-auth-library';
+import { gaxios, OAuth2Client } from 'google-auth-library';
+import type { LoginTicket } from 'google-auth-library';
 import googleClientConfig from '../config/google-client.config';
 import { GoogleTokenDto } from './DTOs/google-token.dto';
 import { UserService } from '../user/provider/user.service';
@@ -29,13 +31,36 @@ export class GoogleAuthService {
 
   async authenticate(token: GoogleTokenDto) {
     try {
-      const loginTicket = await this.oAuthClient.verifyIdToken({
-        idToken: token.googleToken,
-        audience: this.googleConfig.id,
-      });
+      if (!this.googleConfig.id) {
+        throw new InternalServerErrorException(
+          'Google sign-in is not configured',
+        );
+      }
+
+      let loginTicket: LoginTicket;
+      try {
+        loginTicket = await this.oAuthClient.verifyIdToken({
+          idToken: token.googleToken,
+          audience: this.googleConfig.id,
+        });
+      } catch (err) {
+        // A Google/network outage is not an invalid user credential.
+        if (
+          err instanceof gaxios.GaxiosError ||
+          (err instanceof Error &&
+            err.message.startsWith(
+              'Failed to retrieve verification certificates:',
+            ))
+        ) {
+          throw new ServiceUnavailableException(
+            'Google sign-in is temporarily unavailable. Please try again.',
+          );
+        }
+        throw new UnauthorizedException('Invalid or expired Google token');
+      }
       const payload = loginTicket.getPayload();
 
-      if (!payload) {
+      if (!payload || typeof payload.sub !== 'string' || !payload.sub) {
         throw new UnauthorizedException('Authentication fails');
       }
       const {
@@ -57,11 +82,19 @@ export class GoogleAuthService {
           },
         };
       }
-      if (!email) {
-        throw new UnauthorizedException('Authorization fails');
+      if (!email || payload.email_verified !== true) {
+        throw new UnauthorizedException('Google Authorization fails');
       }
       const findExistingUser = await this.userService.findByEmail(email);
       if (findExistingUser) {
+        if (
+          findExistingUser.googleId &&
+          findExistingUser.googleId !== googleId
+        ) {
+          throw new UnauthorizedException(
+            'This account is linked to a different Google account',
+          );
+        }
         await this.userService.updateUser({
           id: findExistingUser.id,
           googleId,

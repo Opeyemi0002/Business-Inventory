@@ -120,7 +120,6 @@ export class AuthService {
       if (findUser.isEmailVerified) {
         throw new ConflictException('Email verified already');
       }
-      findUser.isEmailVerified = true;
       await this.userService.updateUser({
         id: findUser.id,
         isEmailVerified: true,
