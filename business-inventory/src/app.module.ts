@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -11,13 +10,17 @@ import databaseConfig from './config/database.config';
 import appConfig from './config/app.config';
 import environmentValidation from './config/environment.validation';
 import mailConfig from './config/mail.config';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './auth/guards/auth.guard';
+import { JwtModule } from '@nestjs/jwt';
+import jwtConfig from './config/jwt.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       envFilePath: `.env.${process.env.NODE_ENV ?? 'development'}`,
       isGlobal: true,
-      load: [databaseConfig, appConfig, mailConfig],
+      load: [databaseConfig, appConfig, mailConfig, jwtConfig],
       validationSchema: environmentValidation,
     }),
     TypeOrmModule.forRootAsync({
@@ -33,11 +36,12 @@ import mailConfig from './config/mail.config';
         synchronize: config.get<boolean>('database.synchronize'),
       }),
     }),
+    JwtModule.registerAsync(jwtConfig.asProvider()),
     UserModule,
     AuthModule,
     MailModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: AuthGuard }],
 })
 export class AppModule {}
