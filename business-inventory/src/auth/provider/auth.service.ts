@@ -10,7 +10,7 @@ import {
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService, JsonWebTokenError } from '@nestjs/jwt';
+import { JwtService, JsonWebTokenError, TokenExpiredError } from '@nestjs/jwt';
 import { UserService } from '../../user/provider/user.service';
 import { CreateUserDto } from '../DTOs/create-user.dto';
 import type { ConfigType } from '@nestjs/config';
@@ -20,6 +20,7 @@ import { HashService } from './hash.service';
 import { SetPasswordDto } from '../DTOs/set-password.dto';
 import { MailService } from '../../mail/provider/mail.service';
 import { TokenService } from './token.service';
+import { RefreshTokenDto } from '../DTOs/refresh.dto';
 
 @Injectable()
 export class AuthService {
@@ -166,7 +167,6 @@ export class AuthService {
         passwordHash,
         payload.passwordResetVersion,
       );
-
       return {
         status: 'success',
         message: 'password updated successfully',
@@ -178,6 +178,40 @@ export class AuthService {
       if (err instanceof JsonWebTokenError) {
         throw new UnauthorizedException('Invalid or expired password link');
       }
+      throw new InternalServerErrorException('Internal server error');
+    }
+  }
+
+  async getNewTokens(refreshTokenDto: RefreshTokenDto) {
+    try {
+      //verify refreshtoken
+      const getPayload = await this.jwtService.verifyAsync(
+        refreshTokenDto.refreshToken,
+        this.jwtConfiguration,
+      );
+      //if invalidated, throw error
+      if (!getPayload) {
+        throw new UnauthorizedException('You are unauthorized');
+      }
+      //validated, generate a new accessToken
+      const findUser = await this.userService.findById(getPayload.sub);
+      if (!findUser) {
+        throw new NotFoundException('User not found');
+      }
+      const tokens = await this.tokenService.generateToken(findUser);
+
+      return tokens;
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      if (err instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Authorization fails');
+      }
+      if (err instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
+
       throw new InternalServerErrorException('Internal server error');
     }
   }

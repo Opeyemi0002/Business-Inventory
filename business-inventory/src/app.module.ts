@@ -14,6 +14,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from './config/jwt.config';
+import { AuthenticationGuard } from './auth/guards/authentication-guard.guard';
 
 @Module({
   imports: [
@@ -42,6 +43,10 @@ import jwtConfig from './config/jwt.config';
     MailModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: AuthGuard }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: AuthenticationGuard },
+    AuthGuard,
+  ],
 })
 export class AppModule {}

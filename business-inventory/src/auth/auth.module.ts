@@ -23,11 +23,11 @@ import googleClientConfig from '../config/google-client.config';
   providers: [
     AuthService,
     TokenService,
+    GoogleAuthService,
     {
       provide: HashService,
       useClass: BcryptService,
     },
-    GoogleAuthService,
   ],
   controllers: [AuthController],
   exports: [TokenService],
