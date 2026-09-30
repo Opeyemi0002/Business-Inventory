@@ -72,7 +72,7 @@ export class TokenService {
     }
   }
 
-  async generateToken(user: User) {
+  async generateTokens(user: User) {
     const accessToken = await this.jwtService.signAsync(
       { sub: user.id, email: user.email },
       {
@@ -94,6 +94,22 @@ export class TokenService {
     return {
       accessToken: accessToken,
       refreshToken: refreshToken,
+    };
+  }
+
+  async generateNewAccessToken(user: User) {
+    const accessToken = await this.jwtService.signAsync(
+      { sub: user.id, email: user.email },
+      {
+        secret: this.jwtConfiguration.secret,
+        issuer: this.jwtConfiguration.issuer,
+        audience: this.jwtConfiguration.audience,
+        expiresIn: this.jwtConfiguration.expiresIn,
+      },
+    );
+
+    return {
+      accessToken: accessToken,
     };
   }
 }

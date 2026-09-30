@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService, JsonWebTokenError, TokenExpiredError } from '@nestjs/jwt';
+import { Logger } from '@nestjs/common';
 import { UserService } from '../../user/provider/user.service';
 import { CreateUserDto } from '../DTOs/create-user.dto';
 import type { ConfigType } from '@nestjs/config';
@@ -20,10 +21,10 @@ import { HashService } from './hash.service';
 import { SetPasswordDto } from '../DTOs/set-password.dto';
 import { MailService } from '../../mail/provider/mail.service';
 import { TokenService } from './token.service';
-import { RefreshTokenDto } from '../DTOs/refresh.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly hashService: HashService,
     private readonly jwtService: JwtService,
@@ -40,16 +41,21 @@ export class AuthService {
     try {
       const findUser = await this.userService.findByEmail(createUserDto.email);
       if (findUser) {
+        this.logger.warn('attempting registration with an existing email');
         throw new ConflictException('Invalid details');
       }
 
       const createUser = await this.userService.createUser(createUserDto);
+      this.logger.log(`user registered succesfully`);
       return createUser;
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
       }
-
+      this.logger.error(
+        `unexpected error occurred during registration.`,
+        err instanceof Error ? err.stack : undefined,
+      );
       throw new InternalServerErrorException('Internal Server Error');
     }
   }
@@ -83,19 +89,21 @@ export class AuthService {
           message: 'we have sent you an email for verification',
         };
       }
+
       return {
         status: 'success',
         message: 'User login succesfully',
         data: {
           firstName: findUser.firstName,
           lastname: findUser.lastName,
-          ...(await this.tokenService.generateToken(findUser)),
+          ...(await this.tokenService.generateTokens(findUser)),
         },
       };
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
       }
+
       throw new InternalServerErrorException('Internal server error');
     }
   }
@@ -182,11 +190,11 @@ export class AuthService {
     }
   }
 
-  async getNewTokens(refreshTokenDto: RefreshTokenDto) {
+  async getNewAccessToken(token: string) {
     try {
       //verify refreshtoken
       const getPayload = await this.jwtService.verifyAsync(
-        refreshTokenDto.refreshToken,
+        token,
         this.jwtConfiguration,
       );
       //if invalidated, throw error
@@ -198,9 +206,9 @@ export class AuthService {
       if (!findUser) {
         throw new NotFoundException('User not found');
       }
-      const tokens = await this.tokenService.generateToken(findUser);
+      const newToken = await this.tokenService.generateNewAccessToken(findUser);
 
-      return tokens;
+      return newToken;
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;

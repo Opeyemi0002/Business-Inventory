@@ -71,7 +71,7 @@ export class GoogleAuthService {
       } = payload;
       const findUser = await this.userService.findByGoogleId(googleId);
       if (findUser) {
-        const tokens = await this.tokenService.generateToken(findUser);
+        const tokens = await this.tokenService.generateTokens(findUser);
         return {
           status: 'Success',
           message: 'User login successfully',
@@ -101,7 +101,7 @@ export class GoogleAuthService {
           isEmailVerified: true,
         });
 
-        const tokens = await this.tokenService.generateToken(findExistingUser);
+        const tokens = await this.tokenService.generateTokens(findExistingUser);
         return {
           status: 'success',
           message: 'User login successfully',
@@ -118,7 +118,7 @@ export class GoogleAuthService {
         email,
         googleId,
       });
-      const tokens = await this.tokenService.generateToken(newGoogleUser);
+      const tokens = await this.tokenService.generateTokens(newGoogleUser);
 
       return {
         status: 'success',
