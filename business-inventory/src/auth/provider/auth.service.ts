@@ -21,6 +21,7 @@ import { HashService } from './hash.service';
 import { SetPasswordDto } from '../DTOs/set-password.dto';
 import { MailService } from '../../mail/provider/mail.service';
 import { TokenService } from './token.service';
+import { createHash } from 'node:crypto';
 
 @Injectable()
 export class AuthService {
@@ -89,6 +90,15 @@ export class AuthService {
           message: 'we have sent you an email for verification',
         };
       }
+      const tokens = await this.tokenService.generateTokens(findUser);
+      const tokenHash = await this.userService.refreshTokenHash(
+        tokens.refreshToken,
+      );
+
+      await this.userService.updateUser({
+        id: findUser.id,
+        refreshTokenHash: tokenHash,
+      });
 
       return {
         status: 'success',
@@ -96,7 +106,7 @@ export class AuthService {
         data: {
           firstName: findUser.firstName,
           lastname: findUser.lastName,
-          ...(await this.tokenService.generateTokens(findUser)),
+          ...tokens,
         },
       };
     } catch (err) {
@@ -198,13 +208,18 @@ export class AuthService {
         this.jwtConfiguration,
       );
       //if invalidated, throw error
-      if (!getPayload) {
+      if (!getPayload || getPayload.purpose !== 'refresh') {
         throw new UnauthorizedException('You are unauthorized');
       }
       //validated, generate a new accessToken
       const findUser = await this.userService.findById(getPayload.sub);
       if (!findUser) {
         throw new NotFoundException('User not found');
+      }
+      const tokenHash = await this.userService.refreshTokenHash(token);
+
+      if (tokenHash !== findUser.refreshTokenHash) {
+        throw new UnauthorizedException('token no longer valid');
       }
       const newToken = await this.tokenService.generateNewAccessToken(findUser);
 
@@ -221,6 +236,51 @@ export class AuthService {
       }
 
       throw new InternalServerErrorException('Internal server error');
+    }
+  }
+  async logOut(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(
+        token,
+        this.jwtConfiguration,
+      );
+      if (!payload || payload.purpose !== 'refresh') {
+        this.logger.warn('token not found or invalid token');
+        throw new UnauthorizedException('Invalid token');
+      }
+      const findUser = await this.userService.findById(payload.sub);
+      if (!findUser) {
+        this.logger.warn(`failed to find user`);
+        throw new NotFoundException('User not found');
+      }
+      const hashedRefreshToken = createHash('sha256')
+        .update(token)
+        .digest('hex');
+      await this.userService.clearRefreshTokenHashWithLock(
+        findUser.id,
+        hashedRefreshToken,
+      );
+
+      return {
+        status: 'success',
+        message: 'User logged-out successfully',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      if (err instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Invalid token');
+      }
+      if (err instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Expired token');
+      }
+
+      this.logger.error(
+        'unexpected error',
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw new InternalServerErrorException('Unexpected error occured');
     }
   }
 }

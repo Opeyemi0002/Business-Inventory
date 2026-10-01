@@ -37,7 +37,7 @@ export class AuthGuard implements CanActivate {
         getToken,
         this.jwtConfiguration,
       );
-      if (!payload) {
+      if (!payload || payload.purpose !== 'access') {
         throw new UnauthorizedException('Authentication fails');
       }
       request[USER_KEY] = payload;

@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
 import type { ConfigType } from '@nestjs/config';
 import jwtConfig from '../../config/jwt.config';
@@ -74,7 +75,7 @@ export class TokenService {
 
   async generateTokens(user: User) {
     const accessToken = await this.jwtService.signAsync(
-      { sub: user.id, email: user.email },
+      { sub: user.id, email: user.email, purpose: 'access' },
       {
         secret: this.jwtConfiguration.secret,
         issuer: this.jwtConfiguration.issuer,
@@ -83,7 +84,12 @@ export class TokenService {
       },
     );
     const refreshToken = await this.jwtService.signAsync(
-      { sub: user.id, email: user.email },
+      {
+        sub: user.id,
+        email: user.email,
+        purpose: 'refresh',
+        jti: randomUUID(),
+      },
       {
         secret: this.jwtConfiguration.secret,
         issuer: this.jwtConfiguration.issuer,
@@ -99,7 +105,7 @@ export class TokenService {
 
   async generateNewAccessToken(user: User) {
     const accessToken = await this.jwtService.signAsync(
-      { sub: user.id, email: user.email },
+      { sub: user.id, email: user.email, purpose: 'access' },
       {
         secret: this.jwtConfiguration.secret,
         issuer: this.jwtConfiguration.issuer,

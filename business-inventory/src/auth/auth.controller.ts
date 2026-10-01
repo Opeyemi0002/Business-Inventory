@@ -105,4 +105,24 @@ export class AuthController {
     }
     return this.authService.getNewAccessToken(getToken);
   }
+
+  @Auth(AuthType.None)
+  @Post('/log-out')
+  async applicationLogOut(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const refreshToken = request.cookies?.refreshToken;
+    if (typeof refreshToken !== 'string' || !refreshToken) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+    const result = await this.authService.logOut(refreshToken);
+    response.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/auth',
+    });
+    return result;
+  }
 }

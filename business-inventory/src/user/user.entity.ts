@@ -52,6 +52,13 @@ export class User {
   passwordResetVersion: number;
 
   @Column({
+    type: 'varchar',
+    length:64,
+    nullable: true,
+  })
+  refreshTokenHash?: string | null;
+
+  @Column({
     type: 'boolean',
     default: false,
     nullable: false,

@@ -5,9 +5,11 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createHash } from 'node:crypto';
 import { Repository } from 'typeorm';
 import { User } from '../user.entity';
 import { CreateUserDto } from '../../auth/DTOs/create-user.dto';
@@ -17,6 +19,7 @@ import { GoogleDataDto } from '../Dtos/create-google-user.dto';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -142,5 +145,39 @@ export class UserService {
         passwordResetVersion: user.passwordResetVersion + 1,
       });
     });
+  }
+
+  async clearRefreshTokenHashWithLock(
+    userId: number,
+    expectedHash: string,
+  ): Promise<void> {
+    await this.userRepository.manager.transaction(async (manager) => {
+      const users = manager.getRepository(User);
+      const user = await users.findOne({
+        where: { id: userId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      if (expectedHash !== user.refreshTokenHash) {
+        return;
+      }
+      await users.save({
+        id: userId,
+        refreshTokenHash: null,
+      });
+      return;
+    });
+  }
+
+  async refreshTokenHash(token: string) {
+    try {
+      const result = createHash('sha256').update(token).digest('hex');
+      return result;
+    } catch (err) {
+      this.logger.error('', err instanceof Error ? err.stack : undefined);
+      throw new InternalServerErrorException('Unexpected error occur');
+    }
   }
 }

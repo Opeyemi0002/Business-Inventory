@@ -72,6 +72,13 @@ export class GoogleAuthService {
       const findUser = await this.userService.findByGoogleId(googleId);
       if (findUser) {
         const tokens = await this.tokenService.generateTokens(findUser);
+        const refreshTokenHash = await this.userService.refreshTokenHash(
+          tokens.refreshToken,
+        );
+        await this.userService.updateUser({
+          id: findUser.id,
+          refreshTokenHash,
+        });
         return {
           status: 'Success',
           message: 'User login successfully',
@@ -102,6 +109,14 @@ export class GoogleAuthService {
         });
 
         const tokens = await this.tokenService.generateTokens(findExistingUser);
+        const refreshTokenHash = await this.userService.refreshTokenHash(
+          tokens.refreshToken,
+        );
+        await this.userService.updateUser({
+          id: findExistingUser.id,
+          refreshTokenHash,
+        });
+
         return {
           status: 'success',
           message: 'User login successfully',
@@ -119,6 +134,13 @@ export class GoogleAuthService {
         googleId,
       });
       const tokens = await this.tokenService.generateTokens(newGoogleUser);
+      const refreshTokenHash = await this.userService.refreshTokenHash(
+        tokens.refreshToken,
+      );
+      await this.userService.updateUser({
+        id: newGoogleUser.id,
+        refreshTokenHash,
+      });
 
       return {
         status: 'success',
