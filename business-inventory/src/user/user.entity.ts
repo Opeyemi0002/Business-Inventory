@@ -5,7 +5,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { BusinessMember } from '../BusinessTemp/Business-member.entity';
 
 @Entity()
 export class User {
@@ -53,7 +55,7 @@ export class User {
 
   @Column({
     type: 'varchar',
-    length:64,
+    length: 64,
     nullable: true,
   })
   refreshTokenHash?: string | null;
@@ -65,6 +67,9 @@ export class User {
   })
   isEmailVerified: boolean;
 
+  @OneToMany(() => BusinessMember, (businessMember) => businessMember.user)
+  businessMembers: BusinessMember[];
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -72,5 +77,5 @@ export class User {
   updatedAt: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt?: Date | null;
 }

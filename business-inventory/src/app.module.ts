@@ -15,6 +15,7 @@ import { AuthGuard } from './auth/guards/auth.guard';
 import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from './config/jwt.config';
 import { AuthenticationGuard } from './auth/guards/authentication-guard.guard';
+import { BusinessModule } from './BusinessTemp/business.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AuthenticationGuard } from './auth/guards/authentication-guard.guard';
     UserModule,
     AuthModule,
     MailModule,
+    BusinessModule,
   ],
   controllers: [AppController],
   providers: [

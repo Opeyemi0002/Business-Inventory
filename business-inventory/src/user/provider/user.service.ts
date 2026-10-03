@@ -174,6 +174,7 @@ export class UserService {
   async refreshTokenHash(token: string) {
     try {
       const result = createHash('sha256').update(token).digest('hex');
+
       return result;
     } catch (err) {
       this.logger.error('', err instanceof Error ? err.stack : undefined);
