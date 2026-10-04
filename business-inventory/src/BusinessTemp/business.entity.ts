@@ -63,12 +63,6 @@ export class Business {
   })
   country: string;
 
-  @Column({
-    type: 'varchar',
-    nullable: false,
-  })
-  timezone: string;
-
   @OneToMany(() => BusinessMember, (BusinessMember) => BusinessMember.business)
   members: BusinessMember[];
 
