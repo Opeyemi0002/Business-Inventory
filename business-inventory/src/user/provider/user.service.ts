@@ -9,7 +9,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHash } from 'node:crypto';
 import { Repository } from 'typeorm';
 import { User } from '../user.entity';
 import { CreateUserDto } from '../../auth/DTOs/create-user.dto';
@@ -169,16 +168,5 @@ export class UserService {
       });
       return;
     });
-  }
-
-  async refreshTokenHash(token: string) {
-    try {
-      const result = createHash('sha256').update(token).digest('hex');
-
-      return result;
-    } catch (err) {
-      this.logger.error('', err instanceof Error ? err.stack : undefined);
-      throw new InternalServerErrorException('Unexpected error occur');
-    }
   }
 }

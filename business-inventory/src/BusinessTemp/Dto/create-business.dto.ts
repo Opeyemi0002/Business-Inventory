@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateBusinessDto {
   @ApiProperty({
@@ -30,19 +30,22 @@ export class CreateBusinessDto {
     description: 'contact email of the business',
     example: 'Johnfishes@example.com',
   })
-  @IsString()
+  @IsEmail()
   @IsOptional()
   email?: string;
 
   @ApiPropertyOptional({
     description: 'physical locaton of the business',
-    example: '16, lincln street, off New-york road, england',
+    example: '16, lincoln street, off New-york road, england',
   })
   @IsString()
   @IsOptional()
   address?: string;
 
-  @ApiPropertyOptional({})
+  @ApiPropertyOptional({
+    description: 'URL of the business logo',
+    example: 'https://example.com/give.png',
+  })
   @IsString()
   @IsOptional()
   logo?: string;
@@ -57,8 +60,8 @@ export class CreateBusinessDto {
 
   @ApiProperty({
     description:
-      "The country where your business has been carrying out it's operation",
-    example: 'NGN',
+      'The country where your business has been carrying out its operation',
+    example: 'Nigeria',
   })
   @IsString()
   @IsNotEmpty()

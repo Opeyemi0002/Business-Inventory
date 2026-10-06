@@ -4,9 +4,10 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { JwtService } from '@nestjs/jwt';
 import type { ConfigType } from '@nestjs/config';
 import jwtConfig from '../../config/jwt.config';
@@ -15,6 +16,7 @@ import { UserService } from '../../user/provider/user.service';
 
 @Injectable()
 export class TokenService {
+  private readonly logger = new Logger(TokenService.name);
   constructor(
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => UserService))
@@ -117,5 +119,16 @@ export class TokenService {
     return {
       accessToken: accessToken,
     };
+  }
+
+  async refreshTokenHash(token: string) {
+    try {
+      const result = createHash('sha256').update(token).digest('hex');
+
+      return result;
+    } catch (err) {
+      this.logger.error('', err instanceof Error ? err.stack : undefined);
+      throw new InternalServerErrorException('Unexpected error occur');
+    }
   }
 }

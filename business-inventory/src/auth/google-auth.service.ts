@@ -72,7 +72,7 @@ export class GoogleAuthService {
       const findUser = await this.userService.findByGoogleId(googleId);
       if (findUser) {
         const tokens = await this.tokenService.generateTokens(findUser);
-        const refreshTokenHash = await this.userService.refreshTokenHash(
+        const refreshTokenHash = await this.tokenService.refreshTokenHash(
           tokens.refreshToken,
         );
         await this.userService.updateUser({
@@ -109,7 +109,7 @@ export class GoogleAuthService {
         });
 
         const tokens = await this.tokenService.generateTokens(findExistingUser);
-        const refreshTokenHash = await this.userService.refreshTokenHash(
+        const refreshTokenHash = await this.tokenService.refreshTokenHash(
           tokens.refreshToken,
         );
         await this.userService.updateUser({
@@ -134,7 +134,7 @@ export class GoogleAuthService {
         googleId,
       });
       const tokens = await this.tokenService.generateTokens(newGoogleUser);
-      const refreshTokenHash = await this.userService.refreshTokenHash(
+      const refreshTokenHash = await this.tokenService.refreshTokenHash(
         tokens.refreshToken,
       );
       await this.userService.updateUser({

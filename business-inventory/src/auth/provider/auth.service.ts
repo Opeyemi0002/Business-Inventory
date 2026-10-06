@@ -91,7 +91,7 @@ export class AuthService {
         };
       }
       const tokens = await this.tokenService.generateTokens(findUser);
-      const tokenHash = await this.userService.refreshTokenHash(
+      const tokenHash = await this.tokenService.refreshTokenHash(
         tokens.refreshToken,
       );
 
@@ -216,7 +216,7 @@ export class AuthService {
       if (!findUser) {
         throw new NotFoundException('User not found');
       }
-      const tokenHash = await this.userService.refreshTokenHash(token);
+      const tokenHash = await this.tokenService.refreshTokenHash(token);
 
       if (tokenHash !== findUser.refreshTokenHash) {
         throw new UnauthorizedException('token no longer valid');
