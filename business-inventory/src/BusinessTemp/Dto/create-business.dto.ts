@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsIn } from 'class-validator';
+import {currencies, countries} from '../util/country-currency.utils'
 
 export class CreateBusinessDto {
   @ApiProperty({
@@ -51,19 +52,23 @@ export class CreateBusinessDto {
   logo?: string;
 
   @ApiPropertyOptional({
-    description: 'the transaction currency of your business',
+    description: "the transaction currency of your business. If no currency is chosen, the default currency is set to the country's currency",
+    enum:currencies,
     example: 'NGN',
   })
   @IsString()
   @IsOptional()
+  @IsIn(currencies, {message: "please select a supported currency"})
   currency?: string;
 
   @ApiProperty({
     description:
       'The country where your business has been carrying out its operation',
-    example: 'Nigeria',
+      enum:countries,
+    example: 'nigeria',
   })
   @IsString()
   @IsNotEmpty()
+  @IsIn(countries, {message: "please select a supported country"})
   country: string;
 }
