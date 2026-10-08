@@ -1,11 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsIn } from 'class-validator';
+import { IsEmail, IsPhoneNumber, IsNotEmpty, IsOptional, IsString, IsIn, Matches } from 'class-validator';
 import {currencies, countries} from '../util/country-currency.utils'
+import { Transform } from 'class-transformer';
 
 export class CreateBusinessDto {
   @ApiProperty({
     description: 'This is the name of the business',
-    example: 'Nike',
+    example: 'Halleluyah fisheries',
+  })
+  @Transform(({value}:{value:unknown})=> {
+    typeof value === "string" ? value.trim(): value
   })
   @IsString()
   @IsNotEmpty()
@@ -21,10 +25,15 @@ export class CreateBusinessDto {
 
   @ApiProperty({
     description: 'contact phone number of the business',
-    example: '(+1)23456789',
+    example: '+2348134241645',
   })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+  message:
+    'Use + followed by the country calling code and phone number, e.g. +2348031234567',
+})
+@IsPhoneNumber()
   phone: string;
 
   @ApiPropertyOptional({
