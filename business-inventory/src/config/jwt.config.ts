@@ -6,4 +6,5 @@ export default registerAs('jwt', () => ({
   audience: process.env.JWT_AUDIENCE,
   expiresIn: parseInt(process.env.JWT_EXPIRY || '3600'),
   refreshTTL: parseInt(process.env.JWT_REFRESH_TOKEN_TTL || '6000'),
+  businessInvite: parseInt(process.env.JWT_BUSINESS_INVITE || '432000'),
 }));

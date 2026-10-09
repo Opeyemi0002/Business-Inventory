@@ -6,11 +6,13 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import type { ConfigType } from '@nestjs/config';
 import jwtConfig from '../../config/jwt.config';
+import { Business } from '../../BusinessTemp/business.entity';
 import { User } from '../../user/user.entity';
 import { UserService } from '../../user/provider/user.service';
 
@@ -131,4 +133,38 @@ export class TokenService {
       throw new InternalServerErrorException('Unexpected error occur');
     }
   }
+
+  async generateNewBusinessManagerTokenUrl(user: User, business: Business) {
+    try {
+      const baseUrl = `http://localhost:3000`;
+      const token = await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          businessId: business.id,
+          email: user.email,
+          permission: 'manager',
+          purpose: 'invite-manager',
+        },
+        {
+          secret: this.jwtConfiguration.secret,
+          issuer: this.jwtConfiguration.issuer,
+          audience: this.jwtConfiguration.audience,
+          expiresIn: this.jwtConfiguration.businessInvite,
+        },
+      );
+
+      return `${baseUrl}/business/manager/verify/?token=${token}`;
+    } catch (err) {
+      if (err instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Expired or invalid token');
+      }
+      this.logger.error(
+        'Token related error',
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async userBusinessManagerInviteEmail() {}
 }

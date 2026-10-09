@@ -9,7 +9,7 @@ export class CreateBusinessDto {
     example: 'Halleluyah fisheries',
   })
   @Transform(({value}:{value:unknown})=> {
-    typeof value === "string" ? value.trim(): value
+    return typeof value === "string" ? value.trim(): value
   })
   @IsString()
   @IsNotEmpty()

@@ -31,6 +31,14 @@ export class BusinessMember {
   })
   businessEmail?: string | null;
 
+  @Column({
+    type: 'boolean',
+    unique: true,
+    nullable: false,
+    default: false,
+  })
+  isBusinessEmailVerified: boolean;
+
   @ManyToOne(() => User, (user) => user.businessMembers, { nullable: false })
   user: User;
 
