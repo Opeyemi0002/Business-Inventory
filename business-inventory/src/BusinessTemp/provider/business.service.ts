@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   ConflictException,
+  Inject,
 } from '@nestjs/common';
 import { UserService } from '../../user/provider/user.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,20 +15,28 @@ import { Repository } from 'typeorm';
 import { Business } from '../business.entity';
 import { BusinessMember } from '../Business-member.entity';
 import { CreateBusinessDto } from '../Dto/create-business.dto';
-
 import { BusinessRoleType } from '../enums/RoleType.enum';
 import { getCurrency } from '../util/country-currency.utils';
 import { CreateBusinessInviteDto } from '../Dto/create-businessinvite.dto';
+
+import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
+import type { ConfigType } from '@nestjs/config';
+import jwtConfig from '../../config/jwt.config';
+import { MailService } from '../../mail/provider/mail.service';
 
 @Injectable()
 export class BusinessService {
   private readonly logger = new Logger(BusinessService.name);
   constructor(
+    private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
     private readonly userService: UserService,
     @InjectRepository(Business)
     private readonly businessRepository: Repository<Business>,
     @InjectRepository(BusinessMember)
     private readonly businessMemberRepository: Repository<BusinessMember>,
+    @Inject(jwtConfig.KEY)
+    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {}
 
   async create(id: number, createBusinessDto: CreateBusinessDto) {
@@ -127,9 +136,92 @@ export class BusinessService {
         createBusinessInviteDto.email,
       );
       if (checkUser) {
-        
+        await this.mailService.sendBusinessManagerInviteEmail(
+          checkUser,
+          business,
+        );
+        return {
+          status: 'success',
+          message: 'Invite email has been sent successfully',
+        };
       }
-      //send an invitation letter to the email
-    } catch (err) {}
+      //send an invitation letter to the create account
+      await this.mailService.sendNonUserInviteEmail(
+        createBusinessInviteDto.email,
+        business,
+      );
+      return {
+        message:
+          'User need to register before creating an account. An invitation email has been sent to begin registration process',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.error(
+        'database error',
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw new InternalServerErrorException('Unexpected error occur');
+    }
+  }
+  async verifyBusinessManagerInvite(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(
+        token,
+        this.jwtConfiguration,
+      );
+      if (!payload || payload.purpose !== 'invite-manager') {
+        this.logger.warn('Token not found or invalid token');
+        throw new UnauthorizedException('Expired or invalid token');
+      }
+      const findBusiness = await this.businessRepository.findOneBy({
+        id: payload.businessId,
+      });
+
+      if (!findBusiness) {
+        this.logger.warn('Business missing');
+        throw new NotFoundException('Business not found');
+      }
+
+      const findUser = await this.userService.findById(payload.sub);
+      if (!findUser) {
+        this.logger.warn('User nt found');
+        throw new NotFoundException('Business not found');
+      }
+
+      const checkBusinessMember = await this.businessMemberRepository.findOne({
+        where: {
+          user: { id: findUser.id },
+          business: { id: findBusiness.id },
+        },
+      });
+      if (checkBusinessMember) {
+        throw new ConflictException('You are  member of this business');
+      }
+      const businessMembership = this.businessMemberRepository.create({
+        role: BusinessRoleType.Manager,
+        isBusinessMemberVerified: true,
+        user: findUser,
+        business: findBusiness,
+      });
+      await this.businessMemberRepository.save(businessMembership);
+      return {
+        status: 'success',
+        message: 'Congratulation, you are welcome to the team.',
+      };
+    } catch (err) {
+      if (err instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Invalid token');
+      }
+      if (err instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Expired token');
+      }
+      this.logger.error(
+        'database error',
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw new InternalServerErrorException('Unexpected error occur');
+    }
   }
 }

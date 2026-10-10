@@ -15,6 +15,7 @@ import jwtConfig from '../../config/jwt.config';
 import { Business } from '../../BusinessTemp/business.entity';
 import { User } from '../../user/user.entity';
 import { UserService } from '../../user/provider/user.service';
+import { baseUrl } from '../constants/user.constant';
 
 @Injectable()
 export class TokenService {
@@ -28,7 +29,6 @@ export class TokenService {
   ) {}
 
   async emailVerificationUrl(user: User) {
-    const baseUrl = `http://localhost:3000`;
     const token = await this.jwtService.signAsync(
       {
         sub: user.id,
@@ -52,7 +52,6 @@ export class TokenService {
       if (!findUser) {
         throw new NotFoundException('User not found');
       }
-      const baseUrl = `http://localhost:3000`;
 
       const token = await this.jwtService.signAsync(
         {
@@ -136,7 +135,6 @@ export class TokenService {
 
   async generateNewBusinessManagerTokenUrl(user: User, business: Business) {
     try {
-      const baseUrl = `http://localhost:3000`;
       const token = await this.jwtService.signAsync(
         {
           sub: user.id,
@@ -153,7 +151,7 @@ export class TokenService {
         },
       );
 
-      return `${baseUrl}/business/manager/verify/?token=${token}`;
+      return `${baseUrl}/business/user/manager/verify/?token=${token}`;
     } catch (err) {
       if (err instanceof JsonWebTokenError) {
         throw new UnauthorizedException('Expired or invalid token');
@@ -162,9 +160,7 @@ export class TokenService {
         'Token related error',
         err instanceof Error ? err.stack : undefined,
       );
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException('Unexpected error occur');
     }
   }
-
-  async userBusinessManagerInviteEmail() {}
 }

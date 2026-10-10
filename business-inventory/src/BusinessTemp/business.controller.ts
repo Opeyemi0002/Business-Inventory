@@ -13,6 +13,8 @@ import { CreateBusinessDto } from './Dto/create-business.dto';
 import type { Request } from 'express';
 import { USER_KEY } from '../auth/constants/user.constant';
 import { CreateBusinessInviteDto } from './Dto/create-businessinvite.dto';
+import { AuthType } from '../auth/enum/auth.type';
+import { Auth } from '../auth/decorator/auth.decorator';
 
 @Controller('business')
 export class BusinessController {
@@ -41,9 +43,9 @@ export class BusinessController {
       createBusinessInviteDto,
     );
   }
-
-  @Get('business/manager/verify')
+  @Auth(AuthType.None)
+  @Get('user/manager/verify')
   async verifyBusinessManager(@Query('token') token: string) {
-    return;
+    return this.businessService.verifyBusinessManagerInvite(token);
   }
 }

@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Invitation - <%= businessName %>
+    </title>
+</head>
+
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+
+        <!-- Header -->
+        <div style="background-color: #2563eb; padding: 30px; text-align: center;">
+            <h1 style="margin: 0; color: #ffffff; font-size: 28px;">
+                You're Invited!
+            </h1>
+            <p style="margin: 10px 0 0; color: #ffffff; font-size: 16px;">
+                Join <%= businessName %>
+            </p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 30px;">
+            <h2 style="margin-top: 0; color: #333333;">
+                Hello,
+            </h2>
+
+            <p style="color: #555555; font-size: 16px; line-height: 1.6;">
+                You have been invited to join <%= businessName %> as a member
+                    of its team. We look forward to welcoming you on board.
+            </p>
+
+            <p style="color: #555555; font-size: 16px; line-height: 1.6;">
+                To get started, you'll need to create an account on our
+                platform. Use the invitation link below to begin the
+                registration process.
+            </p>
+
+            <!-- Invitation Button -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="<%= invitationLink %>" style="
+                    display: inline-block;
+                    padding: 14px 28px;
+                    background-color: #2563eb;
+                    color: #ffffff;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    font-weight: bold;
+                ">
+                    Create Account &amp; Accept Invitation
+                </a>
+            </div>
+
+            <p style="color: #777777; font-size: 14px; line-height: 1.6;">
+                If you were not expecting this invitation, you can safely
+                ignore this email. No action is required.
+            </p>
+
+            <p style="color: #555555; font-size: 16px; line-height: 1.6;">
+                If you have any questions, please contact the person who
+                sent you this invitation.
+            </p>
+
+            <p style="color: #333333; font-size: 16px; margin-bottom: 0;">
+                Best regards,<br />
+                The <%= businessName %> Team
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8f8f8; padding: 20px; text-align: center;">
+            <p style="margin: 0; color: #999999; font-size: 12px;">
+                &copy; <%= new Date().getFullYear() %>
+                    <%= businessName %>. All rights reserved.
+            </p>
+        </div>
+
+    </div>
+</body>
+
+</html>

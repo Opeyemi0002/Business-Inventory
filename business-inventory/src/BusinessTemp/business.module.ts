@@ -4,11 +4,22 @@ import { BusinessController } from './business.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Business } from './business.entity';
 import { BusinessMember } from './Business-member.entity';
-import { User } from '../user/user.entity';
 import { UserModule } from '../user/user.module';
+import { AuthModule } from '../auth/auth.module';
+import { JwtModule } from '@nestjs/jwt';
+import jwtConfig from '../config/jwt.config';
+import { ConfigModule } from '@nestjs/config';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [UserModule, TypeOrmModule.forFeature([Business, BusinessMember])],
+  imports: [
+    MailModule,
+    AuthModule,
+    UserModule,
+    JwtModule.registerAsync(jwtConfig.asProvider()),
+    ConfigModule.forFeature(jwtConfig),
+    TypeOrmModule.forFeature([Business, BusinessMember]),
+  ],
   providers: [BusinessService],
   controllers: [BusinessController],
 })

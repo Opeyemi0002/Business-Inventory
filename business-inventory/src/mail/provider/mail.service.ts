@@ -8,6 +8,8 @@ import {
 import { MailerService } from '@nestjs-modules/mailer';
 import { User } from '../../user/user.entity';
 import { TokenService } from '../../auth/provider/token.service';
+import { Business } from '../../BusinessTemp/business.entity';
+import { baseUrl } from '../../auth/constants/user.constant';
 
 @Injectable()
 export class MailService {
@@ -47,6 +49,56 @@ export class MailService {
       });
     } catch (err) {
       throw err;
+    }
+  }
+
+  async sendBusinessManagerInviteEmail(
+    user: User,
+    business: Business,
+  ): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        from: `Customer Care <support@hallfisheries.com>`,
+        to: user.email,
+        subject: `You are invited to become a Manager in ${business.name}`,
+        template: 'business-manager-invite',
+        context: {
+          name: user.firstName,
+          businessName: `${business.name}`,
+          invitationLink:
+            await this.tokenService.generateNewBusinessManagerTokenUrl(
+              user,
+              business,
+            ),
+        },
+      });
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('Internal server error');
+    }
+  }
+
+  async sendNonUserInviteEmail(
+    email: string,
+    business: Business,
+  ): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        template: '/non-user-business-invite',
+        subject: `Invitation to create account`,
+        context: {
+          businessName: `${business.name}`,
+          invitationLink: `${baseUrl}/auth/register`,
+        },
+      });
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('Internal server error');
     }
   }
 }
