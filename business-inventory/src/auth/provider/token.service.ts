@@ -16,6 +16,7 @@ import { Business } from '../../BusinessTemp/business.entity';
 import { User } from '../../user/user.entity';
 import { UserService } from '../../user/provider/user.service';
 import { baseUrl } from '../constants/user.constant';
+import { BusinessRoleType } from '../../BusinessTemp/enums/RoleType.enum';
 
 @Injectable()
 export class TokenService {
@@ -133,15 +134,19 @@ export class TokenService {
     }
   }
 
-  async generateNewBusinessManagerTokenUrl(user: User, business: Business) {
+  async generateNewBusinessTokenUrl(
+    user: User,
+    business: Business,
+    role: BusinessRoleType,
+  ) {
     try {
       const token = await this.jwtService.signAsync(
         {
           sub: user.id,
           businessId: business.id,
           email: user.email,
-          permission: 'manager',
-          purpose: 'invite-manager',
+          purpose: 'invite',
+          role,
         },
         {
           secret: this.jwtConfiguration.secret,
@@ -151,7 +156,7 @@ export class TokenService {
         },
       );
 
-      return `${baseUrl}/business/user/manager/verify/?token=${token}`;
+      return `${baseUrl}/business/user/verify/?token=${token}`;
     } catch (err) {
       if (err instanceof JsonWebTokenError) {
         throw new UnauthorizedException('Expired or invalid token');

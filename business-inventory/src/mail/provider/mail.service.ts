@@ -10,6 +10,7 @@ import { User } from '../../user/user.entity';
 import { TokenService } from '../../auth/provider/token.service';
 import { Business } from '../../BusinessTemp/business.entity';
 import { baseUrl } from '../../auth/constants/user.constant';
+import { BusinessRoleType } from '../../BusinessTemp/enums/RoleType.enum';
 
 @Injectable()
 export class MailService {
@@ -52,24 +53,26 @@ export class MailService {
     }
   }
 
-  async sendBusinessManagerInviteEmail(
+  async sendBusinessInviteEmail(
     user: User,
     business: Business,
+    role: BusinessRoleType,
   ): Promise<void> {
     try {
       await this.mailerService.sendMail({
         from: `Customer Care <support@hallfisheries.com>`,
         to: user.email,
-        subject: `You are invited to become a Manager in ${business.name}`,
+        subject: `You are invited to become a ${role} in ${business.name}`,
         template: 'business-manager-invite',
         context: {
           name: user.firstName,
           businessName: `${business.name}`,
-          invitationLink:
-            await this.tokenService.generateNewBusinessManagerTokenUrl(
-              user,
-              business,
-            ),
+          role: `${role}`,
+          invitationLink: await this.tokenService.generateNewBusinessTokenUrl(
+            user,
+            business,
+            role,
+          ),
         },
       });
     } catch (err) {
@@ -87,7 +90,7 @@ export class MailService {
     try {
       await this.mailerService.sendMail({
         to: email,
-        template: '/non-user-business-invite',
+        template: 'non-user-business-invite',
         subject: `Invitation to create account`,
         context: {
           businessName: `${business.name}`,

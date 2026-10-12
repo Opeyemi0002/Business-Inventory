@@ -96,14 +96,81 @@ export class BusinessService {
     }
   }
 
-  async inviteBusinessManager(
+  async verifyBusinessManagerInvite(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(
+        token,
+        this.jwtConfiguration,
+      );
+      if (!payload || payload.purpose !== 'invite') {
+        this.logger.warn('Token not found or invalid token');
+        throw new UnauthorizedException('Expired or invalid token');
+      }
+      const findBusiness = await this.businessRepository.findOneBy({
+        id: payload.businessId,
+      });
+
+      if (!findBusiness) {
+        this.logger.warn('Business missing');
+        throw new NotFoundException('Business not found');
+      }
+
+      const findUser = await this.userService.findById(payload.sub);
+      if (!findUser) {
+        this.logger.warn('User not found');
+        throw new NotFoundException('Business not found');
+      }
+
+      const checkBusinessMember = await this.businessMemberRepository.findOne({
+        where: {
+          user: { id: findUser.id },
+          business: { id: findBusiness.id },
+        },
+      });
+      if (checkBusinessMember) {
+        throw new ConflictException('You are  member of this business');
+      }
+      const businessRole = payload.role;
+
+      const businessMembership = this.businessMemberRepository.create({
+        role: businessRole,
+        isBusinessMemberVerified: true,
+        user: findUser,
+        business: findBusiness,
+      });
+      await this.businessMemberRepository.save(businessMembership);
+      return {
+        status: 'success',
+        message: 'Congratulation, you are welcome to the team.',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      if (err instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Invalid token');
+      }
+      if (err instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Expired token');
+      }
+      this.logger.error(
+        'database error',
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw new InternalServerErrorException('Unexpected error occur');
+    }
+  }
+
+  async inviteBusinessWorker(
     userId: number,
-    id: number,
+    businessId: number,
     createBusinessInviteDto: CreateBusinessInviteDto,
   ) {
     try {
       //check for business
-      const business = await this.businessRepository.findOneBy({ id });
+      const business = await this.businessRepository.findOneBy({
+        id: businessId,
+      });
       if (!business) {
         this.logger.warn('Business not found');
         throw new NotFoundException('Business not found');
@@ -127,95 +194,83 @@ export class BusinessService {
         throw new ConflictException('User is not member of this business');
       }
       //check for your role in the business
-      if (membership.role !== BusinessRoleType.Owner) {
-        this.logger.warn('An unauthorized user is trying to gain permission');
-        throw new UnauthorizedException("You don't have this access");
-      }
-      //asked for email
-      const checkUser = await this.userService.findByEmail(
-        createBusinessInviteDto.email,
-      );
-      if (checkUser) {
-        await this.mailService.sendBusinessManagerInviteEmail(
+      if (
+        membership.role === BusinessRoleType.Owner &&
+        (createBusinessInviteDto.role === BusinessRoleType.Director ||
+          createBusinessInviteDto.role === BusinessRoleType.Manager ||
+          createBusinessInviteDto.role === BusinessRoleType.Owner)
+      ) {
+        const checkUser = await this.userService.findByEmail(
+          createBusinessInviteDto.email,
+        );
+        if (!checkUser) {
+          await this.mailService.sendNonUserInviteEmail(
+            createBusinessInviteDto.email,
+            business,
+          );
+          return {
+            message:
+              'A registration email has been sent. Invite this person again after they register.',
+          };
+        }
+
+        if (createBusinessInviteDto.role === BusinessRoleType.Director) {
+          await this.mailService.sendBusinessInviteEmail(
+            checkUser,
+            business,
+            createBusinessInviteDto.role,
+          );
+
+          return {
+            status: 'success',
+            message: 'An invitation letter to be a director has been sent',
+          };
+        }
+        await this.mailService.sendBusinessInviteEmail(
           checkUser,
           business,
+          createBusinessInviteDto.role,
+        );
+
+        return {
+          status: 'success',
+          message: 'An invitation letter has been sent',
+        };
+      }
+      if (
+        (membership.role === BusinessRoleType.Owner ||
+          membership.role === BusinessRoleType.Director ||
+          membership.role === BusinessRoleType.Manager) &&
+        createBusinessInviteDto.role === BusinessRoleType.Employee
+      ) {
+        const checkUser = await this.userService.findByEmail(
+          createBusinessInviteDto.email,
+        );
+        if (!checkUser) {
+          await this.mailService.sendNonUserInviteEmail(
+            createBusinessInviteDto.email,
+            business,
+          );
+          return {
+            message:
+              'A registration email has been sent. Invite this person again after they register.',
+          };
+        }
+        await this.mailService.sendBusinessInviteEmail(
+          checkUser,
+          business,
+          createBusinessInviteDto.role,
         );
         return {
           status: 'success',
-          message: 'Invite email has been sent successfully',
+          message: 'An invitation letter to be an employee has been sent',
         };
       }
-      //send an invitation letter to the create account
-      await this.mailService.sendNonUserInviteEmail(
-        createBusinessInviteDto.email,
-        business,
-      );
-      return {
-        message:
-          'User need to register before creating an account. An invitation email has been sent to begin registration process',
-      };
+      this.logger.warn('employee trying to assign role');
+      throw new UnauthorizedException("You don't have the permission");
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
-      }
-      this.logger.error(
-        'database error',
-        err instanceof Error ? err.stack : undefined,
-      );
-      throw new InternalServerErrorException('Unexpected error occur');
-    }
-  }
-  async verifyBusinessManagerInvite(token: string) {
-    try {
-      const payload = await this.jwtService.verifyAsync(
-        token,
-        this.jwtConfiguration,
-      );
-      if (!payload || payload.purpose !== 'invite-manager') {
-        this.logger.warn('Token not found or invalid token');
-        throw new UnauthorizedException('Expired or invalid token');
-      }
-      const findBusiness = await this.businessRepository.findOneBy({
-        id: payload.businessId,
-      });
-
-      if (!findBusiness) {
-        this.logger.warn('Business missing');
-        throw new NotFoundException('Business not found');
-      }
-
-      const findUser = await this.userService.findById(payload.sub);
-      if (!findUser) {
-        this.logger.warn('User nt found');
-        throw new NotFoundException('Business not found');
-      }
-
-      const checkBusinessMember = await this.businessMemberRepository.findOne({
-        where: {
-          user: { id: findUser.id },
-          business: { id: findBusiness.id },
-        },
-      });
-      if (checkBusinessMember) {
-        throw new ConflictException('You are  member of this business');
-      }
-      const businessMembership = this.businessMemberRepository.create({
-        role: BusinessRoleType.Manager,
-        isBusinessMemberVerified: true,
-        user: findUser,
-        business: findBusiness,
-      });
-      await this.businessMemberRepository.save(businessMembership);
-      return {
-        status: 'success',
-        message: 'Congratulation, you are welcome to the team.',
-      };
-    } catch (err) {
-      if (err instanceof JsonWebTokenError) {
-        throw new UnauthorizedException('Invalid token');
-      }
-      if (err instanceof TokenExpiredError) {
-        throw new UnauthorizedException('Expired token');
       }
       this.logger.error(
         'database error',

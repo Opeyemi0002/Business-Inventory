@@ -20,7 +20,7 @@ import { AuthModule } from '../auth/auth.module';
             pass: config.get<string>('mail.password'),
           },
         },
-        default: {
+        defaults: {
           from: `business inventory <support@businessinventory.com>`,
         },
         template: {

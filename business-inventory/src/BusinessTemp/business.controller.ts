@@ -30,22 +30,22 @@ export class BusinessController {
     return this.businessService.create(userId, createBusinessDto);
   }
 
-  @Post('/:id/managerinvites')
+  @Post('/:businessId/invites')
   async sendBusinessManagerInviteEmail(
     @Req() request: Request & { [USER_KEY]: { sub: number } },
-    @Param('id', ParseIntPipe) id: number,
+    @Param('businessId', ParseIntPipe) businessId: number,
     @Body() createBusinessInviteDto: CreateBusinessInviteDto,
   ) {
     const userId = request[USER_KEY].sub;
-    return this.businessService.inviteBusinessManager(
+    return this.businessService.inviteBusinessWorker(
       userId,
-      id,
+      businessId,
       createBusinessInviteDto,
     );
   }
   @Auth(AuthType.None)
-  @Get('user/manager/verify')
-  async verifyBusinessManager(@Query('token') token: string) {
+  @Get('user/verify')
+  async verifyBusinessWorker(@Query('token') token: string) {
     return this.businessService.verifyBusinessManagerInvite(token);
   }
 }
