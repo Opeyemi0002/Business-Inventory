@@ -16,6 +16,7 @@ import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from './config/jwt.config';
 import { AuthenticationGuard } from './auth/guards/authentication-guard.guard';
 import { BusinessModule } from './BusinessTemp/business.module';
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { BusinessModule } from './BusinessTemp/business.module';
     AuthModule,
     MailModule,
     BusinessModule,
+    ProductModule,
   ],
   controllers: [AppController],
   providers: [
