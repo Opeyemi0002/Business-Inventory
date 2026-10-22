@@ -17,6 +17,7 @@ import jwtConfig from './config/jwt.config';
 import { AuthenticationGuard } from './auth/guards/authentication-guard.guard';
 import { BusinessModule } from './BusinessTemp/business.module';
 import { ProductModule } from './product/product.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ProductModule } from './product/product.module';
     MailModule,
     BusinessModule,
     ProductModule,
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [

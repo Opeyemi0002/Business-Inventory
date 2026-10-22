@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { BusinessMember } from './Business-member.entity';
+import { Product } from '../product/product.entity';
 
 @Entity()
 export class Business {
@@ -65,6 +66,9 @@ export class Business {
 
   @OneToMany(() => BusinessMember, (BusinessMember) => BusinessMember.business)
   members: BusinessMember[];
+
+  @OneToMany(() => Product, (product) => product.business)
+  products: Product[];
 
   @CreateDateColumn()
   createdAt: Date;

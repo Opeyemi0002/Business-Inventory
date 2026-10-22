@@ -3,11 +3,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Business } from '../BusinessTemp/business.entity';
+import { Category } from '../category/category.entity';
 
-@Entity();
+@Entity()
 export class Product {
   @PrimaryGeneratedColumn()
   id: number;
@@ -32,13 +35,21 @@ export class Product {
 
   @Column({
     type: 'numeric',
-    precision:12,
-    scale:2
+    precision: 12,
+    scale: 2,
     nullable: false,
   })
   price: string;
 
-  @Many
+  @ManyToOne(() => Business, (business) => business.products, {
+    nullable: false,
+  })
+  business: Business;
+
+  @ManyToOne(() => Category, (category) => category.products, {
+    nullable: false,
+  })
+  category: Category;
 
   @CreateDateColumn()
   createdAt: Date;
