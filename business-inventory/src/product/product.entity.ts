@@ -43,6 +43,7 @@ export class Product {
 
   @ManyToOne(() => Business, (business) => business.products, {
     nullable: false,
+    onDelete: 'CASCADE',
   })
   business: Business;
 

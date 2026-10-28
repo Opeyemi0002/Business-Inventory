@@ -26,7 +26,7 @@ export class Category {
   })
   description: string;
 
-  @OneToMany(() => Product, (product) => product.category, { nullable: false })
+  @OneToMany(() => Product, (product) => product.category)
   products: Product[];
 
   @CreateDateColumn()
