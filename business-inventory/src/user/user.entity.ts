@@ -67,6 +67,13 @@ export class User {
   })
   isEmailVerified: boolean;
 
+  @Column({
+    type: 'boolean',
+    default: false,
+    nullable: false,
+  })
+  platformAdmin: boolean;
+
   @OneToMany(() => BusinessMember, (businessMember) => businessMember.user)
   businessMembers: BusinessMember[];
 
