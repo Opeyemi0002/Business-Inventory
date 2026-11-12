@@ -15,6 +15,7 @@ import { CreateUserDto } from '../../auth/DTOs/create-user.dto';
 import { HashService } from '../../auth/provider/hash.service';
 import { MailService } from '../../mail/provider/mail.service';
 import { GoogleDataDto } from '../Dtos/create-google-user.dto';
+import { AssignPermissionDto } from '../Dtos/assign-permission.dto';
 
 @Injectable()
 export class UserService {
@@ -168,5 +169,34 @@ export class UserService {
       });
       return;
     });
+  }
+
+  async createPermission(assignPermissionDto: AssignPermissionDto) {
+    try {
+      // find the user you want to change permission
+      const findUser = await this.userRepository.findOneBy({
+        email: assignPermissionDto.email,
+      });
+      if (!findUser) {
+        this.logger.warn('trying to find non user');
+        throw new NotFoundException('User not found');
+      }
+      //change permission
+
+      await this.userRepository.save({
+        id: findUser.id,
+        platformAdmin: true,
+      });
+
+      return {
+        status: 'success',
+        message: `${findUser.firstName || findUser.email} has been made admin of the platform`,
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('Internal server error');
+    }
   }
 }

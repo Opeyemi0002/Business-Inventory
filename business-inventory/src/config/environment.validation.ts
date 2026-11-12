@@ -20,4 +20,5 @@ export default joi.object({
   GOOGLE_CLIENT_SECRET: joi.string().required(),
   GOOGLE_CLIENT_ID: joi.string().required(),
   JWT_BUSINESS_INVITE: joi.number().required(),
+  SUPER_ADMIN_ID: joi.number().integer().positive().required(),
 });
