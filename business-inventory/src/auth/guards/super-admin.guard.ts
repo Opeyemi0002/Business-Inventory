@@ -5,7 +5,6 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { USER_KEY } from '../constants/user.constant';
 import { ConfigService } from '@nestjs/config';
 
