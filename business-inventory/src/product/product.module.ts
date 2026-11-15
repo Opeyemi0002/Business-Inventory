@@ -6,9 +6,15 @@ import { Product } from './product.entity';
 import { UserModule } from '../user/user.module';
 import { BusinessMember } from '../BusinessTemp/Business-member.entity';
 import { BusinessModule } from '../BusinessTemp/business.module';
+import { CategoryModule } from '../category/category.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product]), UserModule, BusinessModule],
+  imports: [
+    TypeOrmModule.forFeature([Product]),
+    UserModule,
+    BusinessModule,
+    CategoryModule,
+  ],
   providers: [ProductService],
   controllers: [ProductController],
 })

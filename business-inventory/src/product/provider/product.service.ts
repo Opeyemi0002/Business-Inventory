@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { CreateProductDto } from '../Dto/create-product.dto';
 import { UserService } from '../../user/provider/user.service';
 import { BusinessService } from '../../BusinessTemp/provider/business.service';
+import { CategoryService } from '../../category/provider/category.service';
 
 @Injectable()
 export class ProductService {
@@ -20,6 +21,7 @@ export class ProductService {
     private readonly productRepository: Repository<Product>,
     private readonly userService: UserService,
     private readonly businessService: BusinessService,
+    private readonly categoryService: CategoryService,
   ) {}
   async createNewProduct(
     createProductDto: CreateProductDto,
@@ -43,7 +45,20 @@ export class ProductService {
       if (!businessMembership) {
         throw new NotFoundException();
       }
-      let createProduct = this.productRepository.create(createProductDto);
+
+      const checkCategory = await this.categoryService.findCategory(
+        createProductDto.categoryId,
+      );
+
+      if (!checkCategory) {
+        throw new NotFoundException('Category not found');
+      }
+
+      let createProduct = this.productRepository.create({
+        ...createProductDto,
+        category: checkCategory,
+        business: findBusiness,
+      });
       createProduct = await this.productRepository.save(createProduct);
 
       return {

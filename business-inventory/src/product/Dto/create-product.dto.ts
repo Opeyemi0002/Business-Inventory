@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  Matches,
+} from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({
@@ -27,10 +34,14 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: 'Price of the product',
-    example: '$500.00',
+    example: '500.00',
   })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^\d{1,10}(?:\.\d{1,2})?$/, {
+    message:
+      'Enter a price like 500 or 500.50, with up to 10 whole digits and 2 decimal places.',
+  })
   price: string;
 
   @IsInt()
