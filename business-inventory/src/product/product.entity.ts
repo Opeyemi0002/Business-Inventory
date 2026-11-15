@@ -41,6 +41,13 @@ export class Product {
   })
   price: string;
 
+  @Column({
+    type: 'boolean',
+    nullable: false,
+    default: false,
+  })
+  approval: boolean;
+
   @ManyToOne(() => Business, (business) => business.products, {
     nullable: false,
     onDelete: 'CASCADE',

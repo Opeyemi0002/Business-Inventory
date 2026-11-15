@@ -22,5 +22,6 @@ import { MailModule } from '../mail/mail.module';
   ],
   providers: [BusinessService],
   controllers: [BusinessController],
+  exports: [BusinessService],
 })
 export class BusinessModule {}

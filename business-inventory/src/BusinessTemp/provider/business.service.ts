@@ -23,6 +23,7 @@ import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import type { ConfigType } from '@nestjs/config';
 import jwtConfig from '../../config/jwt.config';
 import { MailService } from '../../mail/provider/mail.service';
+import { User } from '../../user/user.entity';
 
 @Injectable()
 export class BusinessService {
@@ -38,6 +39,43 @@ export class BusinessService {
     @Inject(jwtConfig.KEY)
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {}
+
+  async findBusinessMember(userId: number, businessId:number) {
+    try {
+      const CheckBusinessMember = await this.businessMemberRepository.findOne({
+        where: {
+          user:{id:userId},
+          business:{id:businessId},
+        },
+      });
+      if (!CheckBusinessMember) {
+        throw new NotFoundException('You are not a member of this bussiness');
+      }
+      return CheckBusinessMember;
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      throw new InternalServerErrorException('Internal server error');
+    }
+  }
+
+  async findBusiness(businessId:number){
+    try{
+      const findBusiness = await this.businessRepository.findOneBy({
+        id: businessId,
+      });
+      if(!findBusiness){
+        throw new NotFoundException("Business cannot be found")
+      }
+      return findBusiness;
+    }catch(err){
+      if (err instanceof HttpException){
+        throw err
+      }
+      throw new InternalServerErrorException("Internal server error");
+    }
+  }
 
   async create(id: number, createBusinessDto: CreateBusinessDto) {
     try {
