@@ -1,9 +1,11 @@
 import {
+  ForbiddenException,
   HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../product.entity';
@@ -12,6 +14,7 @@ import { CreateProductDto } from '../Dto/create-product.dto';
 import { UserService } from '../../user/provider/user.service';
 import { BusinessService } from '../../BusinessTemp/provider/business.service';
 import { CategoryService } from '../../category/provider/category.service';
+import { ApproveProductDto } from '../Dto/approve-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -74,6 +77,49 @@ export class ProductService {
         err instanceof Error ? err.stack : undefined,
       );
       throw new InternalServerErrorException('Internal server error');
+    }
+  }
+
+  async approveProduct(userId: number, approveProductDto: ApproveProductDto) {
+    try {
+      const BusinessMember = await this.businessService.findBusinessMember(
+        userId,
+        approveProductDto.businessId,
+      );
+
+      if (
+        BusinessMember.role === 'Director' ||
+        BusinessMember.role === 'Employee'
+      ) {
+        throw new ForbiddenException('You are not allowed ');
+      }
+      const findProduct = await this.productRepository.findOneBy({
+        id: approveProductDto.productId,
+        business: { id: approveProductDto.businessId },
+      });
+
+      if (!findProduct) {
+        throw new NotFoundException('Product Not Found');
+      }
+
+      await this.productRepository.save({
+        id: findProduct.id,
+        approval: true,
+      });
+
+      return {
+        status: 'Success',
+        message: 'Approved successfully',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.Logger.error(
+        'Unknown error',
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw new InternalServerErrorException('Internal Server Error');
     }
   }
 }

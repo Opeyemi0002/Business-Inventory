@@ -3,6 +3,7 @@ import {
   Controller,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Req,
   UnauthorizedException,
@@ -11,6 +12,7 @@ import type { Request } from 'express';
 import { ProductService } from './provider/product.service';
 import { CreateProductDto } from './Dto/create-product.dto';
 import { USER_KEY } from '../auth/constants/user.constant';
+import { ApproveProductDto } from './Dto/approve-product.dto';
 
 @Controller('product')
 export class ProductController {
@@ -29,5 +31,15 @@ export class ProductController {
       userId,
       businessId,
     );
+  }
+
+  @Patch('new/approval/:businessId/:productId')
+  async productApproval(
+    @Req() req: Request & { [USER_KEY]: { sub: number } },
+    @Param() approveProductDto: ApproveProductDto,
+  ) {
+    const userId = req[USER_KEY].sub;
+
+    return this.productService.approveProduct(userId, approveProductDto);
   }
 }
