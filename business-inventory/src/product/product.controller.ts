@@ -51,4 +51,10 @@ export class ProductController {
   async getAllProducts(@Param('businessId', ParseIntPipe) businessId: number) {
     return this.productService.getProducts(businessId);
   }
+
+  @Auth(AuthType.None)
+  @Get('/get-product/:businessId/:productId')
+  async getProduct(@Param() approveProductDto: ApproveProductDto) {
+    return this.productService.getProduct(approveProductDto);
+  }
 }
