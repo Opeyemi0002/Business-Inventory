@@ -163,4 +163,42 @@ export class ProductService {
       throw new InternalServerErrorException('Internal server error');
     }
   }
+
+  async deleteProduct(userId: number, approveProductDto: ApproveProductDto) {
+    try {
+      const BusinessMember = await this.businessService.findBusinessMember(
+        userId,
+        approveProductDto.businessId,
+      );
+
+      if (
+        BusinessMember.role === 'Director' ||
+        BusinessMember.role === 'Employee'
+      ) {
+        throw new ForbiddenException('You are not allowed');
+      }
+
+      const product = await this.productRepository.findOne({
+        where: {
+          id: approveProductDto.productId,
+          business: { id: approveProductDto.businessId },
+        },
+      });
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+      await this.productRepository.softDelete(product.id);
+
+      return {
+        status: 'Success',
+        message: 'Product deleted successfully',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.Logger.error('Error', err instanceof Error ? err.stack : undefined);
+      throw new InternalServerErrorException('Internal server error');
+    }
+  }
 }

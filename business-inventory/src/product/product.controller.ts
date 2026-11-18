@@ -1,13 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
   Post,
   Req,
-  UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { ProductService } from './provider/product.service';
@@ -56,5 +56,15 @@ export class ProductController {
   @Get('/get-product/:businessId/:productId')
   async getProduct(@Param() approveProductDto: ApproveProductDto) {
     return this.productService.getProduct(approveProductDto);
+  }
+
+  @Delete('delete-post/:businessId/:productId')
+  async deleteProduct(
+    @Param() approveProductDto: ApproveProductDto,
+    @Req() req: Request & { [USER_KEY]: { sub: number } },
+  ) {
+    const userId = req[USER_KEY].sub;
+
+    return this.productService.deleteProduct(userId, approveProductDto);
   }
 }
