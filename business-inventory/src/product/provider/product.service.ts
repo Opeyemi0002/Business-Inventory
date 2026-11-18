@@ -122,4 +122,21 @@ export class ProductService {
       throw new InternalServerErrorException('Internal Server Error');
     }
   }
+
+  async getProducts(businessId: number) {
+    try {
+      const business = await this.businessService.findBusiness(businessId);
+      const products = await this.productRepository.find({
+        where: { business: { id: businessId }, approval: true },
+      });
+      return products;
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+
+      this.Logger.error('Error', err instanceof Error ? err.stack : undefined);
+      throw new InternalServerErrorException('Internal server error');
+    }
+  }
 }
