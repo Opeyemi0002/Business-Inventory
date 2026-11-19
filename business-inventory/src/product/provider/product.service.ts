@@ -5,7 +5,6 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../product.entity';
@@ -67,6 +66,7 @@ export class ProductService {
       return {
         status: 'success',
         message: 'Product created successfully',
+        productId: createProduct.id,
       };
     } catch (err) {
       if (err instanceof HttpException) {

@@ -40,12 +40,12 @@ export class BusinessService {
     private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {}
 
-  async findBusinessMember(userId: number, businessId:number) {
+  async findBusinessMember(userId: number, businessId: number) {
     try {
       const CheckBusinessMember = await this.businessMemberRepository.findOne({
         where: {
-          user:{id:userId},
-          business:{id:businessId},
+          user: { id: userId },
+          business: { id: businessId },
         },
       });
       if (!CheckBusinessMember) {
@@ -60,20 +60,20 @@ export class BusinessService {
     }
   }
 
-  async findBusiness(businessId:number){
-    try{
+  async findBusiness(businessId: number) {
+    try {
       const findBusiness = await this.businessRepository.findOneBy({
         id: businessId,
       });
-      if(!findBusiness){
-        throw new NotFoundException("Business cannot be found")
+      if (!findBusiness) {
+        throw new NotFoundException('Business cannot be found');
       }
       return findBusiness;
-    }catch(err){
-      if (err instanceof HttpException){
-        throw err
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
       }
-      throw new InternalServerErrorException("Internal server error");
+      throw new InternalServerErrorException('Internal server error');
     }
   }
 
@@ -100,27 +100,32 @@ export class BusinessService {
           'Please provide a currency for this country',
         );
       }
-      await this.businessRepository.manager.transaction(async (manager) => {
-        const businessRepository = manager.getRepository(Business);
+      const businessId = await this.businessRepository.manager.transaction(
+        async (manager) => {
+          const businessRepository = manager.getRepository(Business);
 
-        const businessMemberRepository = manager.getRepository(BusinessMember);
+          const businessMemberRepository =
+            manager.getRepository(BusinessMember);
 
-        const createNewBusiness = businessRepository.create({
-          ...createBusinessDto,
-          currency,
-        });
-        const newBusiness = await businessRepository.save(createNewBusiness);
-        const createNewBusinessMember = businessMemberRepository.create({
-          role: BusinessRoleType.Owner,
-          user: findUser,
-          business: newBusiness,
-        });
-        await businessMemberRepository.save(createNewBusinessMember);
-      });
+          const createNewBusiness = businessRepository.create({
+            ...createBusinessDto,
+            currency,
+          });
+          const newBusiness = await businessRepository.save(createNewBusiness);
+          const createNewBusinessMember = businessMemberRepository.create({
+            role: BusinessRoleType.Owner,
+            user: findUser,
+            business: newBusiness,
+          });
+          await businessMemberRepository.save(createNewBusinessMember);
+          return newBusiness.id;
+        },
+      );
 
       return {
         status: 'success',
         message: `Congratulations, ${findUser.firstName}have successfully start a new business`,
+        businessId,
       };
     } catch (err) {
       if (err instanceof HttpException) {
