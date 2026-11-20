@@ -22,6 +22,7 @@ import { AuthType } from './enum/auth.type';
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { USER_KEY } from './constants/user.constant';
+import { ForgetPasswordDto } from './DTOs/forget-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -131,5 +132,11 @@ export class AuthController {
   async passwordChange(@Req() req: Request & { [USER_KEY]: { sub: number } }) {
     const userId = req[USER_KEY].sub;
     return this.authService.changePassword(userId);
+  }
+
+  @Auth(AuthType.None)
+  @Post('forget-password')
+  async passwordForget(@Body() forgetPasswordDto: ForgetPasswordDto) {
+    return this.authService.forgetPassword(forgetPasswordDto);
   }
 }

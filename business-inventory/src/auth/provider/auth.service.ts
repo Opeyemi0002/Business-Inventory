@@ -21,6 +21,7 @@ import { SetPasswordDto } from '../DTOs/set-password.dto';
 import { MailService } from '../../mail/provider/mail.service';
 import { TokenService } from './token.service';
 import { createHash } from 'node:crypto';
+import { ForgetPasswordDto } from '../DTOs/forget-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -286,6 +287,32 @@ export class AuthService {
   async changePassword(userId: number) {
     try {
       const findUser = await this.userService.findById(userId);
+      if (!findUser) {
+        throw new NotFoundException('User not found');
+      }
+      await this.mailService.sendSetNewPassword(findUser);
+
+      return {
+        status: 'Success',
+        message: 'Please check your email to set a new password',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.error('error', err instanceof Error ? err.stack : undefined);
+      throw new InternalServerErrorException('Internal server errror');
+    }
+  }
+
+  async forgetPassword(forgetPasswordDto: ForgetPasswordDto) {
+    try {
+      const findUser = await this.userService.findByEmail(
+        forgetPasswordDto.email,
+      );
+      if (!findUser) {
+        throw new NotFoundException('User not found');
+      }
       await this.mailService.sendSetNewPassword(findUser);
 
       return {
