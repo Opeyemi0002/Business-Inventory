@@ -7,7 +7,6 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  Req,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService, JsonWebTokenError, TokenExpiredError } from '@nestjs/jwt';
@@ -281,6 +280,24 @@ export class AuthService {
         err instanceof Error ? err.stack : undefined,
       );
       throw new InternalServerErrorException('Unexpected error occured');
+    }
+  }
+
+  async changePassword(userId: number) {
+    try {
+      const findUser = await this.userService.findById(userId);
+      await this.mailService.sendSetNewPassword(findUser);
+
+      return {
+        status: 'Success',
+        message: 'Please check your email to set a new password',
+      };
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.error('error', err instanceof Error ? err.stack : undefined);
+      throw new InternalServerErrorException('Internal server errror');
     }
   }
 }

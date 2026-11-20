@@ -21,6 +21,7 @@ import { AuthType } from './enum/auth.type';
 
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+import { USER_KEY } from './constants/user.constant';
 
 @Controller('auth')
 export class AuthController {
@@ -124,5 +125,11 @@ export class AuthController {
       path: '/auth',
     });
     return result;
+  }
+
+  @Post('change-password')
+  async passwordChange(@Req() req: Request & { [USER_KEY]: { sub: number } }) {
+    const userId = req[USER_KEY].sub;
+    return this.authService.changePassword(userId);
   }
 }
