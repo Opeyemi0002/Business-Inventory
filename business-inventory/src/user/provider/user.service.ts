@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -84,7 +85,21 @@ export class UserService {
         password: hashPassword,
       });
       const newUser = await this.userRepository.save(user);
-      await this.mailService.sendWelcomeEmail(newUser);
+      try {
+        await this.mailService.sendWelcomeEmail(newUser);
+      } catch (err) {
+        this.logger.error(
+          'Mail error',
+          err instanceof Error ? err.stack : undefined,
+        );
+        return {
+          status: 'success',
+          firstname: newUser.firstName,
+          lastName: newUser.lastName,
+          message: 'User was created, but welcomeEmail was not sent',
+        };
+      }
+
       return {
         status: 'success',
         firstname: newUser.firstName,
