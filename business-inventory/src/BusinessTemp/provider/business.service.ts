@@ -131,6 +131,7 @@ export class BusinessService {
       if (err instanceof HttpException) {
         throw err;
       }
+
       this.logger.error(
         'database error',
         err instanceof Error ? err.stack : undefined,

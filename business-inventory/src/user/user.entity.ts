@@ -6,8 +6,10 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { BusinessMember } from '../BusinessTemp/Business-member.entity';
+import { Cart } from '../cart/cart.entity';
 
 @Entity()
 export class User {
@@ -76,6 +78,9 @@ export class User {
 
   @OneToMany(() => BusinessMember, (businessMember) => businessMember.user)
   businessMembers: BusinessMember[];
+
+  @OneToOne(() => Cart, (cart) => cart.user)
+  cart: Cart;
 
   @CreateDateColumn()
   createdAt: Date;
