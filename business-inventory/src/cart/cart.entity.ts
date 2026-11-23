@@ -11,7 +11,6 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { CartItem } from './cart-item.entity';
-import { Product } from '../product/product.entity';
 
 @Entity()
 export class Cart {

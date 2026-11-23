@@ -18,6 +18,7 @@ import { AuthenticationGuard } from './auth/guards/authentication-guard.guard';
 import { BusinessModule } from './BusinessTemp/business.module';
 import { ProductModule } from './product/product.module';
 import { CategoryModule } from './category/category.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { CategoryModule } from './category/category.module';
     BusinessModule,
     ProductModule,
     CategoryModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [
