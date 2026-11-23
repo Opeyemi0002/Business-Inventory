@@ -1,4 +1,5 @@
 import {
+  Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
@@ -10,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { CartItem } from './cart-item.entity';
+import { Product } from '../product/product.entity';
 
 @Entity()
 export class Cart {
@@ -22,6 +24,13 @@ export class Cart {
 
   @OneToMany(() => CartItem, (cartItem) => cartItem.cart)
   items: CartItem[];
+
+  @Column({
+    type: 'timestamp',
+    nullable: false,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  lastActivityAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
