@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cart } from '../cart.entity';
 import { Repository } from 'typeorm';
 import { UserService } from '../../user/provider/user.service';
+import { User } from '../../user/user.entity';
 
 @Injectable()
 export class CartService {
@@ -22,28 +23,39 @@ export class CartService {
 
   async createCart(userId: number) {
     try {
-      // ensure user is authenticated
-      const findUser = await this.userService.findById(userId);
-      if (!findUser) {
-        throw new NotFoundException('User not found');
-      }
-      // check if he has a cart before, query if yes, if not create a new one
-      const findCart = await this.cartRepository.findOne({
-        where: { user: { id: findUser.id } },
-      });
+      const newCart = await this.cartRepository.manager.transaction(
+        async (manager) => {
+          const carts = manager.getRepository(Cart);
+          const users = manager.getRepository(User);
 
-      if (findCart) {
-        return findCart;
-      }
-      const createCart = this.cartRepository.create({
-        user: { id: findUser.id },
-      });
+          const checkUser = await users.findOne({
+            where: { id: userId },
+            lock: { mode: 'pessimistic_write' },
+          });
 
-      await this.cartRepository.save(createCart);
+          if (!checkUser) {
+            throw new NotFoundException('User not found');
+          }
+
+          const findCart = await carts.findOne({
+            where: { user: { id: checkUser.id } },
+          });
+          if (findCart) {
+            return findCart;
+          }
+          let createCart = carts.create({
+            user: { id: checkUser.id },
+          });
+
+          createCart = await carts.save(createCart);
+
+          return createCart;
+        },
+      );
 
       return {
         status: 'success',
-        message: 'cart created succesfully',
+        data: newCart,
       };
     } catch (err) {
       if (err instanceof HttpException) {
