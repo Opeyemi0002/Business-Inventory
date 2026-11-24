@@ -1,5 +1,5 @@
 import {
-  ConflictException,
+  BadRequestException,
   HttpException,
   Injectable,
   InternalServerErrorException,
@@ -9,8 +9,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cart } from '../cart.entity';
 import { Repository } from 'typeorm';
-import { UserService } from '../../user/provider/user.service';
 import { User } from '../../user/user.entity';
+import { CartItem } from '../cart-item.entity';
+import { AddToCartDto } from '../Dto/add-to-cart.dto';
+import { Product } from '../../product/product.entity';
 
 @Injectable()
 export class CartService {
@@ -18,50 +20,98 @@ export class CartService {
   constructor(
     @InjectRepository(Cart)
     private readonly cartRepository: Repository<Cart>,
-    private readonly userService: UserService,
   ) {}
 
-  async createCart(userId: number) {
+  async addToCart(userId: number, addToCartDto: AddToCartDto) {
     try {
-      const newCart = await this.cartRepository.manager.transaction(
+      const cartItem = await this.cartRepository.manager.transaction(
         async (manager) => {
-          const carts = manager.getRepository(Cart);
           const users = manager.getRepository(User);
+          const products = manager.getRepository(Product);
+          const carts = manager.getRepository(Cart);
+          const cartItems = manager.getRepository(CartItem);
 
-          const checkUser = await users.findOne({
+          const user = await users.findOne({
             where: { id: userId },
             lock: { mode: 'pessimistic_write' },
           });
-
-          if (!checkUser) {
+          if (!user) {
             throw new NotFoundException('User not found');
           }
 
-          const findCart = await carts.findOne({
-            where: { user: { id: checkUser.id } },
+          const product = await products.findOne({
+            where: { id: addToCartDto.productId, approval: true },
+            lock: { mode: 'pessimistic_write' },
           });
-          if (findCart) {
-            return findCart;
+          if (!product) {
+            throw new NotFoundException('Product not found');
           }
-          let createCart = carts.create({
-            user: { id: checkUser.id },
+
+          let cart = await carts.findOne({
+            where: { user: { id: user.id } },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (!cart) {
+            cart = await carts.save(carts.create({ user }));
+          }
+
+          const existingCartItem = await cartItems.findOne({
+            where: {
+              cart: { id: cart.id },
+              product: { id: product.id },
+            },
+            lock: { mode: 'pessimistic_write' },
           });
 
-          createCart = await carts.save(createCart);
+          const quantity = existingCartItem
+            ? existingCartItem.quantity + addToCartDto.quantity
+            : addToCartDto.quantity;
 
-          return createCart;
+          if (quantity > product.stock) {
+            throw new BadRequestException(
+              'Requested quantity exceeds available stock',
+            );
+          }
+
+          const savedCartItem = existingCartItem
+            ? await cartItems.save({
+                id: existingCartItem.id,
+                quantity,
+                unitPrice: product.price,
+              })
+            : await cartItems.save(
+                cartItems.create({
+                  cart,
+                  product,
+                  quantity,
+                  unitPrice: product.price,
+                }),
+              );
+
+          await carts.save({ id: cart.id, lastActivityAt: new Date() });
+
+          return savedCartItem;
         },
       );
 
       return {
         status: 'success',
-        data: newCart,
+        message: 'Product added to cart successfully',
+        data: {
+          cartItemId: cartItem.id,
+          productId: addToCartDto.productId,
+          quantity: cartItem.quantity,
+          unitPrice: cartItem.unitPrice,
+        },
       };
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
       }
-      this.logger.error('error', err instanceof Error ? err.stack : undefined);
+      this.logger.error(
+        'Error adding product to cart',
+        err instanceof Error ? err.stack : undefined,
+      );
       throw new InternalServerErrorException('Internal server error');
     }
   }

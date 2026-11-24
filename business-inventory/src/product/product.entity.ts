@@ -11,7 +11,6 @@ import {
 import { Business } from '../BusinessTemp/business.entity';
 import { Category } from '../category/category.entity';
 import { CartItem } from '../cart/cart-item.entity';
-import { Cart } from '../cart/cart.entity';
 
 @Entity()
 export class Product {

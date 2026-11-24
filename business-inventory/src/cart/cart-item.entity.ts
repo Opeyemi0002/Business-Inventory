@@ -1,16 +1,17 @@
 import {
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { Cart } from './cart.entity';
 import { Product } from '../product/product.entity';
 
 @Entity()
+@Unique(['cart', 'product'])
 export class CartItem {
   @PrimaryGeneratedColumn()
   id: number;
@@ -18,7 +19,6 @@ export class CartItem {
   @Column({
     type: 'int',
     nullable: false,
-    default: 0,
   })
   quantity: number;
 
@@ -29,7 +29,10 @@ export class CartItem {
   })
   unitPrice: string;
 
-  @ManyToOne(() => Cart, (cart) => cart.items, { nullable: false })
+  @ManyToOne(() => Cart, (cart) => cart.items, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
   cart: Cart;
 
   @ManyToOne(() => Product, (product) => product.cartItems, { nullable: false })
@@ -40,7 +43,4 @@ export class CartItem {
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @DeleteDateColumn()
-  deletedAt?: Date | null;
 }
