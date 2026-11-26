@@ -1,10 +1,10 @@
 import {
-  BadRequestException,
   HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cart } from '../cart.entity';
@@ -27,8 +27,11 @@ export class CartService {
       const cartItem = await this.cartRepository.manager.transaction(
         async (manager) => {
           const users = manager.getRepository(User);
+
           const products = manager.getRepository(Product);
+
           const carts = manager.getRepository(Cart);
+
           const cartItems = manager.getRepository(CartItem);
 
           const user = await users.findOne({
@@ -38,78 +41,83 @@ export class CartService {
           if (!user) {
             throw new NotFoundException('User not found');
           }
-
           const product = await products.findOne({
             where: { id: addToCartDto.productId, approval: true },
-            lock: { mode: 'pessimistic_write' },
           });
           if (!product) {
             throw new NotFoundException('Product not found');
           }
-
           let cart = await carts.findOne({
             where: { user: { id: user.id } },
-            lock: { mode: 'pessimistic_write' },
           });
+
           if (!cart) {
-            cart = await carts.save(carts.create({ user }));
-          }
-
-          const existingCartItem = await cartItems.findOne({
-            where: {
-              cart: { id: cart.id },
-              product: { id: product.id },
-            },
-            lock: { mode: 'pessimistic_write' },
-          });
-
-          const quantity = existingCartItem
-            ? existingCartItem.quantity + addToCartDto.quantity
-            : addToCartDto.quantity;
-
-          if (quantity > product.stock) {
-            throw new BadRequestException(
-              'Requested quantity exceeds available stock',
+            cart = await carts.save(
+              carts.create({
+                user,
+              }),
             );
           }
 
-          const savedCartItem = existingCartItem
-            ? await cartItems.save({
-                id: existingCartItem.id,
-                quantity,
-                unitPrice: product.price,
-              })
-            : await cartItems.save(
-                cartItems.create({
-                  cart,
-                  product,
-                  quantity,
-                  unitPrice: product.price,
-                }),
+          let existingCartItem = await cartItems.findOne({
+            where: {
+              cart: { id: cart.id },
+              product: { id: product.id, approval: true },
+            },
+          });
+
+          if (!existingCartItem) {
+            if (addToCartDto.quantity > product.stock) {
+              throw new UnprocessableEntityException(
+                'The required quantity cannot be processed',
               );
+            }
+            const newCartItem = await cartItems.save(
+              cartItems.create({
+                quantity: addToCartDto.quantity,
+                cart: { id: cart.id },
+                product: { id: product.id },
+                unitPrice: product.price,
+              }),
+            );
+            await carts.save({
+              id: cart.id,
+              lastActivityAt: new Date(),
+            });
 
-          await carts.save({ id: cart.id, lastActivityAt: new Date() });
+            return newCartItem;
+          }
+          const newQuantity = existingCartItem.quantity + addToCartDto.quantity;
 
-          return savedCartItem;
+          if (newQuantity > product.stock) {
+            throw new UnprocessableEntityException(
+              'The required quantity cannot be processed',
+            );
+          }
+          existingCartItem = await cartItems.save({
+            id: existingCartItem.id,
+            quantity: newQuantity,
+            unitPrice: product.price,
+          });
+          await carts.save({
+            id: cart.id,
+            lastActivityAt: new Date(),
+          });
+          return existingCartItem;
         },
       );
 
       return {
         status: 'success',
-        message: 'Product added to cart successfully',
-        data: {
-          cartItemId: cartItem.id,
-          productId: addToCartDto.productId,
-          quantity: cartItem.quantity,
-          unitPrice: cartItem.unitPrice,
-        },
+        message: 'CartItem added successfully',
+        data: cartItem,
       };
     } catch (err) {
       if (err instanceof HttpException) {
         throw err;
       }
       this.logger.error(
-        'Error adding product to cart',
+        'Error adding to cart',
         err instanceof Error ? err.stack : undefined,
       );
       throw new InternalServerErrorException('Internal server error');
